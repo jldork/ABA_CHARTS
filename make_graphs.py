@@ -3,6 +3,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import pandas as pd
 from sklearn import linear_model
 
@@ -12,7 +13,7 @@ print("Compiling graphs for: \n", ', '.join(students))
 
 def graph(sheets, sheet_name):
     sheet = sheets[sheet_name]
-    data = sheet[['Objective Number','Date Met','Lesson LU','Objectives Met ', 'Tactic']]
+    data = sheet[['Objective Number','Protocol','Date Met','Lesson LU','Objectives Met ', 'Tactic']]
     data = data[~data['Lesson LU'].isnull()] # Filter to latest LU date
     data['Objective Number'] = data['Objective Number'].astype(int) 
     data['Cumulative Objectives'] = data['Objectives Met '].cumsum()
@@ -29,6 +30,7 @@ def graph(sheets, sheet_name):
     
     plot_LU = data.plot(x='Objective Number', y='Lesson LU', kind='bar', color='black', figsize=(18,11), legend=False)
     plot_Tactic = data.plot(x='Objective Number', y='Tactic', kind='bar', color='red', bottom=data['Lesson LU'], ax=plot_LU, legend=False)
+    plot_Tactic = data.plot(x='Objective Number', y='Protocol', kind='bar', color='blue', bottom=data['Protocol'], ax=plot_LU, legend=False)
     plot_LU.set_ylabel('Learn Units to Meet an Objective')
     
     ax = data.plot(x='Objective Number', y='Cumulative Objectives', secondary_y=True, ax=plot_Tactic, color='g', legend=False)
@@ -45,11 +47,14 @@ def graph(sheets, sheet_name):
     
     red_patch = mpatches.Patch(color='red', label='Tactic')
     black_patch = mpatches.Patch(color='black', label='Lesson LU')
-    green_patch = mpatches.Patch(color='green', label='Cumulative Objectives')
-    trendline = mpatches.Patch(color='black', linestyle='dashed', label='Linear (Cumulative Objectives)')
+    blue_patch = mpatches.Patch(color='blue', label='Protocol')
+    green_patch = mlines.Line2D([], [], color='green', markersize=5, label='Cumulative Objectives')
+    # green_patch = mpatches.Patch(color='green', label='Cumulative Objectives')
+    trendline = mlines.Line2D([], [], color='black', label='Linear (Cumulative Objectives)')
+    # trendline = mpatches.Patch(color='black', linestyle='dashed', label='Linear (Cumulative Objectives)')
     plt.legend(
         bbox_to_anchor=(0.19, 1.01,.6, 0.075), 
-        handles=[red_patch, black_patch, green_patch, trendline], 
+        handles=[red_patch, black_patch, blue_patch, green_patch, trendline], 
         mode='expand', ncol=4)
     
     return ax
