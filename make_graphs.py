@@ -7,27 +7,32 @@ import matplotlib.lines as mlines
 import pandas as pd
 from sklearn import linear_model
 
-student_sheets = pd.read_excel('./LPEverydayMath.xlsx', sheet_name=None)
-students = ['Ashley', 'Benny','Luisana', 'Declan', 'Grayson', 'Vera']
-print("Compiling graphs for: \n", ', '.join(students))
+def graph(excel_file, sheet_name):
+    #############################
+    # Reading and Cleaning Data #
+    #############################
 
-def graph(sheets, sheet_name):
-    sheet = sheets[sheet_name]
+    sheet = pd.read_excel(excel_file, sheet_name=sheet_name)
     data = sheet[['Objective Number','Protocol','Date Met','Lesson LU','Objectives Met ', 'Tactic']]
     data = data[~data['Lesson LU'].isnull()] # Filter to latest LU date
     data['Objective Number'] = data['Objective Number'].astype(int) 
     data['Cumulative Objectives'] = data['Objectives Met '].cumsum()
     data.fillna(0, inplace=True)
-    
 
-    # Create linear regression object
+    ###################
+    # Build Trendline #
+    ###################
+
+    # Create linear regression
     regr = linear_model.LinearRegression()
-    # Train the model using the training sets
     regr.fit(data[['Objective Number']], data[['Cumulative Objectives']])
-    # Make predictions using the testing set
     predicted = regr.predict(data[['Objective Number']])
     data['Trendline'] = predicted[:,0]
     
+    ###################
+    # Build the Chart #
+    ###################
+
     plot_LU = data.plot(x='Objective Number', y='Lesson LU', kind='bar', color='black', figsize=(18,11), legend=False)
     plot_Tactic = data.plot(x='Objective Number', y='Tactic', kind='bar', color='red', bottom=data['Lesson LU'], ax=plot_LU, legend=False)
     plot_Tactic = data.plot(x='Objective Number', y='Protocol', kind='bar', color='blue', bottom=data['Protocol'], ax=plot_LU, legend=False)
@@ -45,26 +50,32 @@ def graph(sheets, sheet_name):
     plt.title(sheet_name + ' - 1 - Math', y=1.08)
     ax = data.plot(x='Objective Number', y='Trendline', secondary_y=True, ax=plot_Tactic, color='black', linestyle='--', alpha=0.5, legend=False)
     
+    ##########
+    # LEGEND #
+    ##########
+
+    # Block Legend Markers
     red_patch = mpatches.Patch(color='red', label='Tactic')
     black_patch = mpatches.Patch(color='black', label='Lesson LU')
     blue_patch = mpatches.Patch(color='blue', label='Protocol')
+    
+    # Linear Legend Markers
     green_patch = mlines.Line2D([], [], color='green', markersize=5, label='Cumulative Objectives')
-    # green_patch = mpatches.Patch(color='green', label='Cumulative Objectives')
     trendline = mlines.Line2D([], [], color='black', label='Linear (Cumulative Objectives)')
-    # trendline = mpatches.Patch(color='black', linestyle='dashed', label='Linear (Cumulative Objectives)')
+    
+    # Add Legend
     plt.legend(
         bbox_to_anchor=(0.19, 1.01,.6, 0.075), 
         handles=[red_patch, black_patch, blue_patch, green_patch, trendline], 
         mode='expand', ncol=4)
     
-    return ax
+    ########################
+    # Saving and Uploading #
+    ########################
 
-if not os.path.exists('./charts'):
-    os.makedirs('./charts')
-
-for student in students:
-    ax = graph(student_sheets,student)
+    # Save Figure to /tmp
     fig = plt.gcf()
-    fig.savefig('charts/' + student + '.png')
+    chart_fname = '/tmp/' + student + '.png'
+    fig.savefig(chart_fname)
 
-print("Complete! Check the charts folder")
+    return open(chart_fname, 'wb')
